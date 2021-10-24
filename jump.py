@@ -34,6 +34,8 @@ class Entity:
         self.collider = collider
         self.speed = pg.Vector2()
         self.color = color
+        self.colision_x = False
+        self.colision_y = False
 
     def update(self):
         self.collider.x += self.speed.x
@@ -75,13 +77,16 @@ player = Entity(Box(100,100,50,50), Color.red)
 floor = Entity(Box(0,0, screen.w, 100), Color.green)
 floor.collider.y = screen.h - floor.collider.h
 
-floor2 = Entity(Box(0,0, 100, 100), Color.green)
-floor2.collider.x = screen.w - floor2.collider.w
+floor2 = Entity(Box(0,0,100,100), Color.green)
+floor2.collider.x = 300
 floor2.collider.y = screen.h - floor2.collider.h - floor.collider.h
 
+floor3 = Entity(Box(0,0,10,screen.h), Color.green)
+floor4 = Entity(Box(screen.w-10,0,10,screen.h), Color.green)
+
 dynamic_list = [player]
-static_list = [floor, floor2]
-render_list = [player, floor, floor2]
+static_list = [floor, floor2, floor3, floor4]
+render_list = [player, floor, floor2, floor3, floor4]
 
 
 
@@ -99,7 +104,7 @@ while not game_exit:
     keys = pg.key.get_pressed()
 
     if keys[pg.K_UP]:
-        if player.speed.y == 0:
+        if player.colision_y:
             player.speed.y = -40
 
     if keys[pg.K_LEFT]:
@@ -113,9 +118,11 @@ while not game_exit:
     player.speed.y += gravity
 
     # Collition
-    for sbox in static_list:
-        for dbox in dynamic_list:
-            for i in range(step):
+    for dbox in dynamic_list:
+        dbox.colision_x = False
+        dbox.colision_y = False
+        for sbox in static_list:
+            for i in range(1, step+1):
                 f_dbox = dbox.collider.copy()
                 f_dbox.x += i*dbox.speed.x/step
                 f_dbox.y += i*dbox.speed.y/step
@@ -125,23 +132,29 @@ while not game_exit:
                 f_sbox.y += i*sbox.speed.y/step
 
                 if check_collition(f_sbox, f_dbox):
-                    
-                    f_dbox = dbox.collider.copy()
-                    f_dbox.x += i*dbox.speed.x/step
-                    f_dbox.y += (i-1)*dbox.speed.y/step
 
-                    if check_collition(f_sbox, f_dbox):
+                    f_dbox_x = dbox.collider.copy()
+                    f_dbox_x.x += i*dbox.speed.x/step
+                    f_dbox_x.y += (i-1)*dbox.speed.y/step
+
+                    f_dbox_y = dbox.collider.copy()
+                    f_dbox_y.x += (i-1)*dbox.speed.x/step
+                    f_dbox_y.y += i*dbox.speed.y/step
+
+                    if check_collition(f_sbox, f_dbox_x):
                         dbox.speed.x = (i-1)*dbox.speed.x/step
-
-                    f_dbox = dbox.collider.copy()
-                    f_dbox.x += (i-1)*dbox.speed.x/step
-                    f_dbox.y += i*dbox.speed.y/step
-
-                    if check_collition(f_sbox, f_dbox):
+                        dbox.colision_x = True
+                    elif check_collition(f_sbox, f_dbox_y):
                         dbox.speed.y = (i-1)*dbox.speed.y/step
-
-
+                        dbox.colision_y = True
+                    else:
+                        dbox.speed.x = (i-1)*dbox.speed.x/step
+                        dbox.speed.y = (i-1)*dbox.speed.y/step
+                        dbox.colision_x = True
+                        dbox.colision_y = True
                     break
+
+
 
     # Update
     for box in dynamic_list:
