@@ -86,8 +86,8 @@ floor1 = Entity(Box(0,0,10,screen.h), Color.green)
 floor3 = Entity(Box(400,0,200,60), Color.green)
 floor3.collider.y = floor.collider.y - floor3.collider.h
 
-floor4 = Entity(Box(0,0,200,60), Color.green)
-floor4.collider.x = floor.collider.x + floor.collider.w + 100
+floor4 = Entity(Box(0,0,200,20), Color.green)
+floor4.collider.x = floor.collider.x + floor.collider.w + 200
 floor4.collider.y = floor.collider.y - 50
 
 dynamic_list = [p1]
@@ -99,9 +99,11 @@ pg.display.set_mode(screen.size)
 
 while not game_exit:
     ref_time = t.time()
+
     for event in pg.event.get():
         if event.type == pg.QUIT:
             game_exit = True
+            break
 
     keys = pg.key.get_pressed()
     
@@ -117,14 +119,14 @@ while not game_exit:
     if keys[pg.K_LEFT]:
         if not speed_lock_left:
             p1.speed.x = 0
-        p1.speed.x -= 0.5
+        p1.speed.x -= 1
         if p1.speed.x < -speed_limit:
             p1.speed.x = -speed_limit
         speed_lock_left = True
     elif keys[pg.K_RIGHT]:
         if not speed_lock_right:
             p1.speed.x = 0
-        p1.speed.x += 0.5
+        p1.speed.x += 1
         if p1.speed.x > speed_limit:
             p1.speed.x = speed_limit
         speed_lock_right = True
@@ -136,7 +138,7 @@ while not game_exit:
 
     if not keys[pg.K_RIGHT]:
         speed_lock_right = False
-        
+
     # Apply Force
     for box in dynamic_list:
         box.speed.y += gravity 
@@ -199,8 +201,9 @@ while not game_exit:
     pg.display.flip()
 
     timestamp = t.time() - ref_time
-    if timestamp < 1/fps:
-        t.sleep(1/fps - timestamp)
+    if timestamp < 1/(fps+0.5):
+        timestamp1 = t.time() - ref_time
+        t.sleep(1/(fps+0.5) - timestamp1)
 
     print(round(1/(t.time() - ref_time)))
 
