@@ -69,9 +69,10 @@ def check_collition(A: Box, B: Box):
 
 fps = 60
 step = 10
-gravity = 10
+gravity = 5
 game_exit = False
-screen = Box(0,0,640,480)
+jump_lock = False
+screen = Box(0,40,640,480)
 
 p1 = Entity(Box(100,100,50,50), Color.red)
 floor = Entity(Box(0,0,2*screen.w,40), Color.green)
@@ -79,9 +80,16 @@ floor.collider.y = screen.h - floor.collider.h
 
 floor1 = Entity(Box(0,0,10,screen.h), Color.green)
 
+floor3 = Entity(Box(400,0,200,60), Color.green)
+floor3.collider.y = floor.collider.y - floor3.collider.h
+
+floor4 = Entity(Box(0,0,200,60), Color.green)
+floor4.collider.x = floor.collider.x + floor.collider.w + 100
+floor4.collider.y = floor.collider.y - 50
+
 dynamic_list = [p1]
-static_list = [floor, floor1]
-render_list = [p1, floor, floor1]
+static_list = [floor, floor1, floor3, floor4]
+render_list = [p1, floor, floor1, floor3, floor4]
 
 pg.init()
 pg.display.set_mode(screen.size)
@@ -97,8 +105,11 @@ while not game_exit:
     # Input
 
     if keys[pg.K_UP]:
-        if p1.collision.y:
+        if p1.collision.y and not jump_lock:
             p1.speed.y += -40
+            jump_lock = True
+    else:
+        jump_lock = False
 
     if keys[pg.K_LEFT]:
         p1.speed.x = -10
