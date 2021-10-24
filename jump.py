@@ -71,6 +71,11 @@ fps = 60
 step = 10
 gravity = 5
 game_exit = False
+
+speed_limit_x = 10
+jump_lock = False
+speed_lock_left = False
+speed_lock_right = False
 screen = Box(0,0,640,480)
 
 player = Entity(Box(100,100,50,50), Color.red)
@@ -104,15 +109,37 @@ while not game_exit:
     keys = pg.key.get_pressed()
 
     if keys[pg.K_UP]:
-        if player.colision_y:
+        if player.colision_y and not jump_lock:
             player.speed.y = -40
+            jump_lock = True
+    elif not keys[pg.K_UP]:
+        jump_lock = False
 
     if keys[pg.K_LEFT]:
-        player.speed.x = -10
+        if not speed_lock_left:
+            player.speed.x = 0
+        player.speed.x += -2
+        if player.speed.x < -speed_limit_x:
+            player.speed.x = -speed_limit_x
+        
+        speed_lock_left = True
     elif keys[pg.K_RIGHT]:
-        player.speed.x = 10
+        if not speed_lock_right:
+            player.speed.x = 0
+        
+        player.speed.x += 2
+        if player.speed.x > speed_limit_x:
+            player.speed.x = speed_limit_x
+
+        speed_lock_right = True
     else:
         player.speed.x = 0
+
+    if not keys[pg.K_LEFT]:
+        speed_lock_left = False
+
+    if not keys[pg.K_RIGHT]:
+        speed_lock_right = False
 
     # Apply Force
     player.speed.y += gravity
