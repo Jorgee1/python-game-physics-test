@@ -70,6 +70,9 @@ def check_collition(A: Box, B: Box):
 fps = 60
 step = 10
 gravity = 5
+speed_limit = 20
+speed_lock_left = False
+speed_lock_right = False
 game_exit = False
 jump_lock = False
 screen = Box(0,40,640,480)
@@ -112,13 +115,28 @@ while not game_exit:
         jump_lock = False
 
     if keys[pg.K_LEFT]:
-        p1.speed.x = -10
+        if not speed_lock_left:
+            p1.speed.x = 0
+        p1.speed.x -= 0.5
+        if p1.speed.x < -speed_limit:
+            p1.speed.x = -speed_limit
+        speed_lock_left = True
     elif keys[pg.K_RIGHT]:
-        p1.speed.x = 10
+        if not speed_lock_right:
+            p1.speed.x = 0
+        p1.speed.x += 0.5
+        if p1.speed.x > speed_limit:
+            p1.speed.x = speed_limit
+        speed_lock_right = True
     else:
         p1.speed.x = 0
 
+    if not keys[pg.K_LEFT]:
+        speed_lock_left = False
 
+    if not keys[pg.K_RIGHT]:
+        speed_lock_right = False
+        
     # Apply Force
     for box in dynamic_list:
         box.speed.y += gravity 
