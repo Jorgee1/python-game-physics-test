@@ -65,7 +65,7 @@ def check_collition(A: Box, B: Box):
 
 
 
-fps = 90
+fps = 60
 step = 10
 gravity = 5
 game_exit = False
