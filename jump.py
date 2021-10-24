@@ -7,9 +7,8 @@ class Color:
     black = ( 25,  25,  25)
     white = (200, 200, 200)
     red   = (200,  25,  25)
-    green = ( 25, 200,  25)
-    blue  = ( 25,  25, 200)
-
+    green = ( 25, 150,  25)
+    blue  = ( 100,  150, 200)
 
 class Box:
     def __init__(self, x, y, w, h):
@@ -68,8 +67,9 @@ def check_collition(A: Box, B: Box):
 
 
 fps = 60
+cap_fps = True
 step = 10
-gravity = 5
+gravity = 4
 game_exit = False
 
 speed_limit_x = 10
@@ -78,7 +78,10 @@ speed_lock_left = False
 speed_lock_right = False
 screen = Box(0,0,640,480)
 
-player = Entity(Box(100,100,50,50), Color.red)
+player = Entity(Box(100,0,50,50), Color.red)
+thing = Entity(Box(450,0,50,50), Color.blue)
+thing_sign = 1
+
 floor = Entity(Box(0,0, screen.w, 100), Color.green)
 floor.collider.y = screen.h - floor.collider.h
 
@@ -89,9 +92,9 @@ floor2.collider.y = screen.h - floor2.collider.h - floor.collider.h
 floor3 = Entity(Box(0,0,10,screen.h), Color.green)
 floor4 = Entity(Box(screen.w-10,0,10,screen.h), Color.green)
 
-dynamic_list = [player]
+dynamic_list = [player, thing]
 static_list = [floor, floor2, floor3, floor4]
-render_list = [player, floor, floor2, floor3, floor4]
+render_list = [player, floor, floor2, floor3, floor4, thing]
 
 
 
@@ -142,9 +145,13 @@ while not game_exit:
         speed_lock_right = False
 
     # Apply Force
-    player.speed.y += gravity
+    thing.speed.x = thing_sign * 5
 
-    # Collition
+
+    for box in dynamic_list:
+        box.speed.y += gravity
+
+    # Collition Static
     for dbox in dynamic_list:
         dbox.colision_x = False
         dbox.colision_y = False
@@ -155,8 +162,8 @@ while not game_exit:
                 f_dbox.y += i*dbox.speed.y/step
                 
                 f_sbox = sbox.collider.copy()
-                f_sbox.x += i*sbox.speed.x/step
-                f_sbox.y += i*sbox.speed.y/step
+                #f_sbox.x += i*sbox.speed.x/step
+                #f_sbox.y += i*sbox.speed.y/step
 
                 if check_collition(f_sbox, f_dbox):
 
@@ -181,9 +188,10 @@ while not game_exit:
                         dbox.colision_y = True
                     break
 
-
-
     # Update
+    if thing.colision_x:
+        thing_sign = -thing_sign
+
     for box in dynamic_list:
         box.update()
 
@@ -198,9 +206,9 @@ while not game_exit:
 
     # FPS Control
     timestamp = t.time() - ref_time
-    if (timestamp < 1/fps):
+    if (timestamp < 1/fps) and cap_fps:
         t.sleep(1/fps - timestamp)
     
-    print(round(1/(t.time() - ref_time)), player.speed.y)
+    print(round(1/(t.time() - ref_time)))
 pg.quit()
 
