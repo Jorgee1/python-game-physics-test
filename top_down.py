@@ -67,7 +67,7 @@ def check_collition(A: Box, B: Box):
         (A_DER >= B_IZQ) and (A_IZQ <= B_DER)
     )
 
-n = 20
+n = 100
 fps = 60
 step = 3
 game_exit = False
@@ -102,7 +102,7 @@ render_list = [p1, wall1, wall2, wall3, wall4, wall5, wall6, wall7, wall8, wall9
 
 
 for i in range(n):
-    dummy = Entity(Box(20+i*55,330,50,50), Color.blue)
+    dummy = Entity(Box(20+i*5,330,50,50), Color.blue)
 
     dummy.speed.x = (1+r.random())*2*(-1)**i
     dummy.speed.y = (1+r.random())*2*(-1)**i
@@ -140,10 +140,20 @@ while not game_exit:
         p1.speed.x = 0
 
     # Colition
+    ref_colision_time = t.time()
     for box in dynamic_list:
         box.collision.x = False
         box.collision.y = False
         for wall in static_list:
+            test_box = box.collider.copy()
+            test_box.x += box.speed.x
+            test_box.y += box.speed.y
+
+            if not check_collition(test_box, wall.collider):
+                # If the box is not going to collide with anything
+                # there is no need to keep checking for dynamic vs static
+                continue
+
             for i in range(1, step+1):
                 f_box = box.collider.copy()
                 f_box.x += i*box.speed.x/step
@@ -177,7 +187,7 @@ while not game_exit:
                     box.speed.x = (i-1)*box.speed.x/step
                     box.speed.y = (i-1)*box.speed.y/step
                     break
-
+    total_time_collision = t.time() - ref_time
 
     # Update
     for box in dynamic_list:
@@ -203,6 +213,6 @@ while not game_exit:
     if timestamp < 1/(fps + 0.5):
         t.sleep(1/(fps+0.5) - timestamp)
     
-    print(round(1/(t.time() - ref_time)))
+    print(round(1/(t.time() - ref_time)), round((total_time_collision/(1/60))*100))
 
 pg.quit()
