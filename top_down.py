@@ -104,8 +104,8 @@ render_list = [p1, wall1, wall2, wall3, wall4, wall5, wall6, wall7, wall8, wall9
 for i in range(n):
     dummy = Entity(Box(20+i*5,330,50,50), Color.blue)
 
-    dummy.speed.x = (1+r.random())*2*(-1)**i
-    dummy.speed.y = (1+r.random())*2*(-1)**i
+    dummy.speed.x = (1+r.random())*2*(-1)**(round(r.random())+1)
+    dummy.speed.y = (1+r.random())*2*(-1)**(round(r.random())+1)
 
 
     dynamic_list.append(dummy)
