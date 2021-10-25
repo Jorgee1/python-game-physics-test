@@ -102,7 +102,7 @@ render_list = [p1, wall1, wall2, wall3, wall4, wall5, wall6, wall7, wall8, wall9
 
 
 for i in range(n):
-    dummy = Entity(Box(20+i*5,330,50,50), Color.blue)
+    dummy = Entity(Box(20,330,50,50), Color.blue)
 
     dummy.speed.x = (1+r.random())*2*(-1)**(round(r.random())+1)
     dummy.speed.y = (1+r.random())*2*(-1)**(round(r.random())+1)
@@ -158,18 +158,18 @@ while not game_exit:
                 f_box = box.collider.copy()
                 f_box.x += i*box.speed.x/step
                 f_box.y += i*box.speed.y/step
-
-                f_box_x = box.collider.copy()
-                f_box_x.x += i*box.speed.x/step
-                f_box_x.y += (i-1)*box.speed.y/step
-
-                f_box_y = box.collider.copy()
-                f_box_y.x += (i-1)*box.speed.x/step
-                f_box_y.y += i*box.speed.y/step
-
-                colition_x = check_collition(f_box_x, wall.collider)
-                colition_y = check_collition(f_box_y, wall.collider)
                 colition_xy = check_collition(f_box, wall.collider)
+
+                f_box = box.collider.copy()
+                f_box.x += i*box.speed.x/step
+                f_box.y += (i-1)*box.speed.y/step
+                colition_x = check_collition(f_box, wall.collider)
+
+                f_box = box.collider.copy()
+                f_box.x += (i-1)*box.speed.x/step
+                f_box.y += i*box.speed.y/step
+                colition_y = check_collition(f_box, wall.collider)
+
 
                 if colition_x and not colition_y:
                     box.collision.x = True
@@ -187,9 +187,9 @@ while not game_exit:
                     box.speed.x = (i-1)*box.speed.x/step
                     box.speed.y = (i-1)*box.speed.y/step
                     break
+        
     total_time_collision = t.time() - ref_time
 
-    # Update
     for box in dynamic_list:
         box.update()
 
@@ -197,6 +197,7 @@ while not game_exit:
     screen.y = p1.collider.y + p1.collider.h/2 - screen.h/2
 
     # Render
+    ref_render_time = t.time()
     surface = pg.display.get_surface()
     surface.fill(Color.black)
 
@@ -207,12 +208,17 @@ while not game_exit:
         draw_box(render_box, box.color)
 
     pg.display.flip()
-
+    total_time_render = t.time() - ref_render_time
+    
     # FPS Control
     timestamp = t.time() - ref_time
     if timestamp < 1/(fps + 0.5):
         t.sleep(1/(fps+0.5) - timestamp)
     
-    print(round(1/(t.time() - ref_time)), round((total_time_collision/(1/60))*100))
+    print(
+        'FPS:', round(1/(t.time() - ref_time)),
+        'collision:', round(total_time_collision*100, 2), 'ms',
+        'render:', round(total_time_render*100, 2), 'ms'
+    )
 
 pg.quit()
