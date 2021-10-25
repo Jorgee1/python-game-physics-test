@@ -160,29 +160,36 @@ while not game_exit:
                 f_dbox = dbox.collider.copy()
                 f_dbox.x += i*dbox.speed.x/step
                 f_dbox.y += i*dbox.speed.y/step
-                
-                f_sbox = sbox.collider.copy()
-                #f_sbox.x += i*sbox.speed.x/step
-                #f_sbox.y += i*sbox.speed.y/step
 
-                if check_collition(f_sbox, f_dbox):
+                f_dbox_x = dbox.collider.copy()
+                f_dbox_x.x += i*dbox.speed.x/step
+                f_dbox_x.y += (i-1)*dbox.speed.y/step
 
-                    f_dbox_x = dbox.collider.copy()
-                    f_dbox_x.x += i*dbox.speed.x/step
-                    f_dbox_x.y += (i-1)*dbox.speed.y/step
+                f_dbox_y = dbox.collider.copy()
+                f_dbox_y.x += (i-1)*dbox.speed.x/step
+                f_dbox_y.y += i*dbox.speed.y/step
 
-                    f_dbox_y = dbox.collider.copy()
-                    f_dbox_y.x += (i-1)*dbox.speed.x/step
-                    f_dbox_y.y += i*dbox.speed.y/step
+                colition_x = check_collition(f_dbox_x, sbox.collider)
+                colition_y = check_collition(f_dbox_y, sbox.collider)
+                colition_xy = check_collition(f_dbox, sbox.collider)
 
-                    if check_collition(f_sbox, f_dbox_x):
-                        dbox.speed.x = (i-1)*dbox.speed.x/step
-                        dbox.colision_x = True
-                        
-                    if check_collition(f_sbox, f_dbox_y):
-                        dbox.speed.y = (i-1)*dbox.speed.y/step
-                        dbox.colision_y = True
 
+
+                if colition_x and not colition_y:
+                    dbox.colision_x = True
+                    dbox.speed.x = (i-1)*dbox.speed.x/step
+                    break
+
+                if colition_y and not colition_x:
+                    dbox.colision_y = True
+                    dbox.speed.y = (i-1)*dbox.speed.y/step
+                    break
+
+                if colition_xy:
+                    dbox.colision_x = True
+                    dbox.colision_y = True
+                    dbox.speed.x = (i-1)*dbox.speed.x/step
+                    dbox.speed.y = (i-1)*dbox.speed.y/step
                     break
 
     # Update
@@ -203,8 +210,8 @@ while not game_exit:
 
     # FPS Control
     timestamp = t.time() - ref_time
-    if (timestamp < 1/fps) and cap_fps:
-        t.sleep(1/fps - timestamp)
+    if (timestamp < 1/(fps+0.5)) and cap_fps:
+        t.sleep(1/(fps+0.5) - timestamp)
     
     print(round(1/(t.time() - ref_time)))
 pg.quit()

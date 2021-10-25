@@ -159,23 +159,33 @@ while not game_exit:
                 f_box.x += i*box.speed.x/step
                 f_box.y += i*box.speed.y/step
 
-                if check_collition(f_box, wall.collider):
-                    f_box_x = box.collider.copy()
-                    f_box_x.x += i*box.speed.x/step
-                    f_box_x.y += (i-1)*box.speed.y/step
+                f_box_x = box.collider.copy()
+                f_box_x.x += i*box.speed.x/step
+                f_box_x.y += (i-1)*box.speed.y/step
 
-                    f_box_y = box.collider.copy()
-                    f_box_y.x += (i-1)*box.speed.x/step
-                    f_box_y.y += i*box.speed.y/step
+                f_box_y = box.collider.copy()
+                f_box_y.x += (i-1)*box.speed.x/step
+                f_box_y.y += i*box.speed.y/step
 
-                    if check_collition(f_box_x, wall.collider):
-                        box.collision.x = True
-                        box.speed.x = (i-1)*box.speed.x/step
-                        
-                    if check_collition(f_box_y, wall.collider):
-                        box.collision.y = True
-                        box.speed.y = (i-1)*box.speed.y/step
+                colition_x = check_collition(f_box_x, wall.collider)
+                colition_y = check_collition(f_box_y, wall.collider)
+                colition_xy = check_collition(f_box, wall.collider)
 
+                if colition_x and not colition_y:
+                    box.collision.x = True
+                    box.speed.x = (i-1)*box.speed.x/step
+                    break
+
+                if colition_y and not colition_x:
+                    box.collision.y = True
+                    box.speed.y = (i-1)*box.speed.y/step
+                    break
+
+                if colition_xy:
+                    box.collision.x = True
+                    box.collision.y = True
+                    box.speed.x = (i-1)*box.speed.x/step
+                    box.speed.y = (i-1)*box.speed.y/step
                     break
 
     # Update
