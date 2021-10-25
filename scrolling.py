@@ -171,14 +171,11 @@ while not game_exit:
                     if check_collition(f_box_x, wall.collider):
                         box.collision.x = True
                         box.speed.x = (i-1)*box.speed.x/step
-                    elif check_collition(f_box_y, wall.collider):
+                        
+                    if check_collition(f_box_y, wall.collider):
                         box.collision.y = True
                         box.speed.y = (i-1)*box.speed.y/step
-                    else:
-                        box.collision.x = True
-                        box.collision.y = True
-                        box.speed.x = (i-1)*box.speed.x/step
-                        box.speed.y = (i-1)*box.speed.y/step
+
                     break
 
     # Update

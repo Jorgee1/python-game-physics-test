@@ -178,14 +178,11 @@ while not game_exit:
                     if check_collition(f_sbox, f_dbox_x):
                         dbox.speed.x = (i-1)*dbox.speed.x/step
                         dbox.colision_x = True
-                    elif check_collition(f_sbox, f_dbox_y):
+                        
+                    if check_collition(f_sbox, f_dbox_y):
                         dbox.speed.y = (i-1)*dbox.speed.y/step
                         dbox.colision_y = True
-                    else:
-                        dbox.speed.x = (i-1)*dbox.speed.x/step
-                        dbox.speed.y = (i-1)*dbox.speed.y/step
-                        dbox.colision_x = True
-                        dbox.colision_y = True
+
                     break
 
     # Update
