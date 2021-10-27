@@ -19,8 +19,6 @@ while not game_exit:
             game_exit = True
             break
 
-
-    
     surface = pg.display.get_surface()
     surface.fill((25,25,25))
 
@@ -33,7 +31,7 @@ while not game_exit:
         v1, v2 = v
         v1 = (v1 - min_frame) * 15
         v2 = (v2 - min_frame) * 15
-        pg.draw.line(surface, (200,25,25), (v1+50,i),(v2+50,i+1))
+        pg.draw.line(surface, (200,25,25), (i, v1+50),(i+1,v2+50))
 
     pg.display.flip()
 

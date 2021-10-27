@@ -1,15 +1,11 @@
 import math
-import random as r
 import time as t
+import random as r
 import pygame as pg
-
-class Bool2:
-    def __init__(self, x=False, y=False):
-        self.x = x
-        self.y = y
 
 class Color:
     black = ( 25, 25, 25)
+    gray  = (100,100,100)
     white = (200,200,200)
     red   = (200, 25, 25)
     green = ( 25,200, 25)
@@ -26,9 +22,13 @@ class Box:
         return Box(self.x, self.y, self.w, self.h)
 
     @property
+    def center(self):
+        return pg.Vector2(self.x + self.w/2, self.y + self.h/2)
+
+    @property
     def rect(self):
         return pg.Rect(self.x, self.y, self.w, self.h)
-    
+
     @property
     def size(self):
         return (self.w, self.h)
@@ -38,17 +38,23 @@ class Entity:
         self.collider = box
         self.speed = pg.Vector2()
         self.color = color
-        self.collision = Bool2()
-        
+
     def update(self):
         self.collider.x += self.speed.x
         self.collider.y += self.speed.y
+
+class Zone:
+    def __init__(self, id, collider, color):
+        self.id = id
+        self.collider = collider
+        self.color = color
 
 def draw_box(box: Box, color: Color):
     surface = pg.display.get_surface()
     pg.draw.rect(surface, color, box.rect, width=1)
 
 def check_collition(A: Box, B: Box):
+    # AABB
     # A Edges
     A_IZQ = A.x
     A_DER = A.x + A.w
@@ -68,57 +74,46 @@ def check_collition(A: Box, B: Box):
         (A_DER >= B_IZQ) and (A_IZQ <= B_DER)
     )
 
-n = 100
+n = 6
 fps = 60
-step = 3
+step = 10
 game_exit = False
-
+event_trigger = False
 screen = Box(0,0,640,480)
 
 p1 = Entity(Box(0,0,50,50), Color.red)
-p1.collider.x = screen.w/2 - p1.collider.w/2
-p1.collider.y = screen.h/2 - p1.collider.h/2
+p1.collider.x = p1.collider.x - p1.collider.w/2 + screen.w/2 
+p1.collider.y = p1.collider.y - p1.collider.h/2 + screen.h/2
 
+wall1 = Entity(Box(0,0,screen.w, 10), Color.green)
+wall2 = Entity(Box(0,0,10, screen.h), Color.green)
+wall3 = Entity(Box(0,0,screen.w, 10), Color.green)
+wall3.collider.y = screen.h - wall3.collider.h
+wall4 = Entity(Box(0,0,10, screen.h), Color.green)
+wall4.collider.x = screen.w - wall4.collider.w
 
-wall1 = Entity(Box(40,40,100,100), Color.green)
+zone1 = Zone(0, Box(0,0,50,50), Color.blue)
+zone1.collider.x = 10 + (r.random()*(screen.w-zone1.collider.w-20))
+zone1.collider.y = 10 + (r.random()*(screen.h-zone1.collider.h-20))
 
-wall2 = Entity(Box(0,0,10,screen.h*2), Color.green)
-wall3 = Entity(wall2.collider.copy(), Color.green)
-wall3.collider.x = screen.w*2 - wall3.collider.w
-
-wall4 = Entity(Box(0,0,screen.w*2,10), Color.green)
-wall5 = Entity(wall4.collider.copy(), Color.green)
-wall5.collider.y = screen.h*2 - wall5.collider.h
-
-wall6 = Entity(Box(400,400,200,200), Color.green)
-
-wall7 = Entity(Box(1000,600,200,200), Color.green)
-wall8 = Entity(Box(1050,50,200,200), Color.green)
-
-wall9 = Entity(Box(50,800,200,100), Color.green)
+zone_list = [zone1]
+for i in range(len(zone_list), n):
+    zone = Zone(i, Box(0,0,50,50), Color.blue)
+    zone.collider.x = 10 + (r.random()*(screen.w-zone.collider.w-20))
+    zone.collider.y = 10 + (r.random()*(screen.h-zone.collider.h-20))
+    zone_list.append(zone)
 
 dynamic_list = [p1]
-static_list = [wall1, wall2, wall3, wall4, wall5, wall6, wall7, wall8, wall9]
-render_list = [p1, wall1, wall2, wall3, wall4, wall5, wall6, wall7, wall8, wall9]
-
-
-for i in range(n):
-    dummy = Entity(Box(20,330,50,50), Color.blue)
-
-    dummy.speed.x = (1+r.random())*2*(-1)**(round(r.random())+1)
-    dummy.speed.y = (1+r.random())*2*(-1)**(round(r.random())+1)
-
-
-    dynamic_list.append(dummy)
-    render_list.append(dummy)
-
+static_list = [wall1, wall2, wall3, wall4]
+render_list = [p1, wall1, wall2, wall3, wall4]
 
 pg.init()
 pg.display.set_mode(screen.size)
 
 while not game_exit:
-
     ref_time = t.time()
+
+    # Event
     for event in pg.event.get():
         if event.type == pg.QUIT:
             game_exit = True
@@ -126,25 +121,47 @@ while not game_exit:
     # Input
     keys = pg.key.get_pressed()
 
+    event_trigger = keys[pg.K_z]
+
     if keys[pg.K_UP]:
-        p1.speed.y = -10
+        p1.speed.y = -10 
     elif keys[pg.K_DOWN]:
         p1.speed.y = 10
     else:
         p1.speed.y = 0
 
     if keys[pg.K_LEFT]:
-        p1.speed.x = -10
+        p1.speed.x = -10 
     elif keys[pg.K_RIGHT]:
         p1.speed.x = 10
     else:
         p1.speed.x = 0
 
-    # Colition
-    ref_colision_time = t.time()
+    # Collition
+
+    for zone in zone_list:
+        zone.color = Color.blue
+        if check_collition(p1.collider, zone.collider):
+            if event_trigger:
+                zone.color = Color.gray
+                
+            if zone.id == 0 and event_trigger:
+                print("Is dangerous to go alone, take this")
+            elif zone.id == 1:
+                p1_c = p1.collider.center
+                z_c = zone.collider.center
+
+                v_x = p1_c.x - z_c.x
+                v_y = p1_c.y - z_c.y
+                mag = math.sqrt(v_x**2 + v_y**2)
+
+                p1.speed.x = 100*v_x/mag
+                p1.speed.y = 100*v_y/mag
+            elif event_trigger:
+                print("Nothing to do here")
+            break
+
     for box in dynamic_list:
-        box.collision.x = False
-        box.collision.y = False
         for wall in static_list:
             test_box = box.collider.copy()
             test_box.x += box.speed.x
@@ -173,53 +190,41 @@ while not game_exit:
 
 
                 if colition_x and not colition_y:
-                    box.collision.x = True
                     box.speed.x = (i-1)*box.speed.x/step
                     break
 
                 if colition_y and not colition_x:
-                    box.collision.y = True
                     box.speed.y = (i-1)*box.speed.y/step
                     break
 
                 if colition_xy:
-                    box.collision.x = True
-                    box.collision.y = True
                     box.speed.x = (i-1)*box.speed.x/step
                     box.speed.y = (i-1)*box.speed.y/step
                     break
-        
-    total_time_collision = t.time() - ref_time
+
+    # Update
 
     for box in dynamic_list:
         box.update()
 
-    screen.x = p1.collider.x + p1.collider.w/2 - screen.w/2
-    screen.y = p1.collider.y + p1.collider.h/2 - screen.h/2
-
     # Render
-    ref_render_time = t.time()
     surface = pg.display.get_surface()
     surface.fill(Color.black)
 
     for box in render_list:
-        render_box = box.collider.copy()
-        render_box.x -= screen.x
-        render_box.y -= screen.y
-        draw_box(render_box, box.color)
+        draw_box(box.collider, box.color)
+
+    for zone in zone_list:
+        draw_box(zone.collider, zone.color)
 
     pg.display.flip()
-    total_time_render = t.time() - ref_render_time
-    
+
     # FPS Control
     timestamp = t.time() - ref_time
     if timestamp < 1/(fps + 0.5):
         t.sleep(1/(fps+0.5) - timestamp)
-    
-    print(
-        'FPS:', round(1/(t.time() - ref_time)),
-        'collision:', round(total_time_collision*100, 2), 'ms',
-        'render:', round(total_time_render*100, 2), 'ms'
-    )
+
+    print(round(1/(t.time() - ref_time)))
 
 pg.quit()
+
