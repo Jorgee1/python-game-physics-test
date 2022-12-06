@@ -1,15 +1,18 @@
-import math
-import time as t
-import random as r
-import pygame as pg
-import json
-from pygame.time import Clock
 
-from lib import color as Color
+import json
+
+from pathlib import Path
+
+from pygame.time import Clock
+from pygame.math import Vector2
+from pygame import init, event, QUIT
+from pygame.display import set_mode, get_surface, flip
+
 from lib.box import Box, draw_box
 from lib.controller import Controller
-from lib import collision
-from pathlib import Path
+from lib import color as Color, collision
+
+
 
 class Bool2:
     def __init__(self, x=False, y=False):
@@ -20,7 +23,7 @@ class Entity:
     def __init__(self, x=0, y=0, w=0, h=0, color=Color.black, airborn=False):
         self.collider = Box(x, y, w, h)
         self.collision = Bool2()
-        self.speed = pg.Vector2()
+        self.speed = Vector2()
         self.color = color
         self.airborn = airborn
         self.jump_counter = 0
@@ -75,24 +78,23 @@ def main():
     static_list = floors
     render_list = dynamic_list + floors + warps
 
-    pg.init()
-    pg.display.set_mode(screen.size)
+    init()
+    set_mode(screen.size)
     clock = Clock()
     
     controls = Controller()
 
     while not game_exit:
 
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
+        for e in event.get():
+            if e.type == QUIT:
                 game_exit = True
                 break
 
-        keys = pg.key.get_pressed()
         controls.update()
 
         # Input TODO: implement movement schema
-        if controls.up.press:
+        if controls.accept.press:
             if not p1.airborn:
                 p1.airborn = True
                 p1.jump_counter = 8
@@ -198,7 +200,7 @@ def main():
         #screen.y = p1.collider.y + p1.collider.h/2 - screen.h/2
 
         # Render
-        surface = pg.display.get_surface()
+        surface = get_surface()
         surface.fill(Color.black)
 
         for box in render_list:
@@ -207,7 +209,7 @@ def main():
             temp_box.y -= screen.y
             draw_box(temp_box, box.color)
 
-        pg.display.flip()
+        flip()
 
         if next_level:
             data   = levels[next_level]

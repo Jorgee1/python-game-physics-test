@@ -1,37 +1,17 @@
-import math
-import time as t
-import random as r
-import pygame as pg
+from pygame.time import Clock
+from pygame.math import Vector2
+from pygame import init, event, QUIT
+from pygame.display import set_mode, get_surface, flip
 
-class Color:
-    black = ( 25,  25,  25)
-    white = (200, 200, 200)
-    red   = (200,  25,  25)
-    green = ( 25, 150,  25)
-    blue  = ( 100,  150, 200)
-
-class Box:
-    def __init__(self, x, y, w, h):
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
-
-    def copy(self):
-        return Box(self.x, self.y, self.w, self.h)
-
-    @property
-    def rect(self):
-        return pg.Rect(self.x, self.y, self.w, self.h)
-
-    @property
-    def size(self):
-        return (self.w, self.h)
+from lib.box import Box, draw_box
+from lib import color as Color
+from lib import collision
+from lib.controller import Controller
 
 class Entity:
     def __init__(self, collider, color):
         self.collider = collider
-        self.speed = pg.Vector2()
+        self.speed = Vector2()
         self.color = color
         self.colision_x = False
         self.colision_y = False
@@ -40,34 +20,7 @@ class Entity:
         self.collider.x += self.speed.x
         self.collider.y += self.speed.y
 
-def draw_box(box: Box, color: Color):
-    surface = pg.display.get_surface()
-    pg.draw.rect(surface, color, box.rect, width=1)
-
-def check_collition(A: Box, B: Box):
-    # A Edges
-    A_IZQ = A.x
-    A_DER = A.x + A.w
-    A_ARR = A.y
-    A_ABJ = A.y + A.h
-
-    # B Edges
-    B_IZQ = B.x
-    B_DER = B.x + B.w
-    B_ARR = B.y
-    B_ABJ = B.y + B.h
-
-    # Restrictions
-
-    return (
-        (A_ABJ >= B_ARR) and (A_ARR <= B_ABJ) and
-        (A_DER >= B_IZQ) and (A_IZQ <= B_DER)
-    )
-
-
-
-fps = 60
-cap_fps = True
+target_fps = 60
 step = 10
 gravity = 4
 game_exit = False
@@ -92,33 +45,37 @@ floor2.collider.y = screen.h - floor2.collider.h - floor.collider.h
 floor3 = Entity(Box(0,0,10,screen.h), Color.green)
 floor4 = Entity(Box(screen.w-10,0,10,screen.h), Color.green)
 
+floor5 = Entity(Box(0,225,100,10), Color.green)
+
+
 dynamic_list = [player, thing]
-static_list = [floor, floor2, floor3, floor4]
-render_list = [player, floor, floor2, floor3, floor4, thing]
+static_list = [floor, floor2, floor3, floor4, floor5]
+render_list = dynamic_list + static_list
 
 
 
-pg.init()
-pg.display.set_mode(screen.size)
+init()
+set_mode(screen.size)
+clock = Clock()
+
+controls = Controller()
 
 while not game_exit:
-    ref_time = t.time()
-
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
+    for e in event.get():
+        if e.type == QUIT:
             game_exit = True
 
     # Input
-    keys = pg.key.get_pressed()
+    controls.update()
 
-    if keys[pg.K_UP]:
+    if controls.up.state:
         if player.colision_y and not jump_lock:
             player.speed.y = -40
             jump_lock = True
-    elif not keys[pg.K_UP]:
+    elif not controls.up.state:
         jump_lock = False
 
-    if keys[pg.K_LEFT]:
+    if controls.left.state:
         if not speed_lock_left:
             player.speed.x = 0
         player.speed.x += -2
@@ -126,7 +83,7 @@ while not game_exit:
             player.speed.x = -speed_limit_x
         
         speed_lock_left = True
-    elif keys[pg.K_RIGHT]:
+    elif controls.right.state:
         if not speed_lock_right:
             player.speed.x = 0
         
@@ -138,10 +95,10 @@ while not game_exit:
     else:
         player.speed.x = 0
 
-    if not keys[pg.K_LEFT]:
+    if not controls.left.state:
         speed_lock_left = False
 
-    if not keys[pg.K_RIGHT]:
+    if not controls.right.state:
         speed_lock_right = False
 
     # Apply Force
@@ -169,9 +126,9 @@ while not game_exit:
                 f_dbox_y.x += (i-1)*dbox.speed.x/step
                 f_dbox_y.y += i*dbox.speed.y/step
 
-                colition_x = check_collition(f_dbox_x, sbox.collider)
-                colition_y = check_collition(f_dbox_y, sbox.collider)
-                colition_xy = check_collition(f_dbox, sbox.collider)
+                colition_x = collision.check(f_dbox_x, sbox.collider)
+                colition_y = collision.check(f_dbox_y, sbox.collider)
+                colition_xy = collision.check(f_dbox, sbox.collider)
 
 
 
@@ -185,13 +142,14 @@ while not game_exit:
                     dbox.speed.y = (i-1)*dbox.speed.y/step
                     break
 
+                """
                 if colition_xy:
                     dbox.colision_x = True
                     dbox.colision_y = True
                     dbox.speed.x = (i-1)*dbox.speed.x/step
                     dbox.speed.y = (i-1)*dbox.speed.y/step
                     break
-
+                """
     # Update
     if thing.colision_x:
         thing_sign = -thing_sign
@@ -200,19 +158,13 @@ while not game_exit:
         box.update()
 
     # Render
-    surface = pg.display.get_surface()
+    surface = get_surface()
     surface.fill(Color.black)
     
     for box in render_list:
         draw_box(box.collider, box.color)
 
-    pg.display.flip()
+    flip()
 
     # FPS Control
-    timestamp = t.time() - ref_time
-    if (timestamp < 1/(fps+0.5)) and cap_fps:
-        t.sleep(1/(fps+0.5) - timestamp)
-    
-    print(round(1/(t.time() - ref_time)))
-pg.quit()
-
+    clock.tick(target_fps)

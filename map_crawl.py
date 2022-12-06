@@ -1,36 +1,13 @@
 import time as t
 import pygame as pg
 
-class Color:
-    black = (25,25,25)
-    grey  = (40,40,40)
-    white = (200,200,200)
-    red   = (200,100,25)
-    green = (25,200,25)
-    blue  = (25,100,200)
+from lib.box import Box, draw_box
+from lib import color as Color, collision
 
 class Bool2:
     def __init__(self, x=False, y=False):
         self.x = x
         self.y = y
-
-class Box:
-    def __init__(self, x, y, w, h):
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
-
-    def copy(self):
-        return Box(self.x, self.y, self.w, self.h)
-    
-    @property
-    def rect(self):
-        return pg.Rect(self.x, self.y, self.w, self.h)
-
-    @property
-    def size(self):
-        return (self.w, self.h)
 
 class Warp:
     def __init__(self, id, collider: Box, color):
@@ -72,11 +49,6 @@ class Map:
     def add_event(self, event):
         self.event_list.append(event)
         self.render_list.append(event)
-
-
-def draw_box(box: Box, color: Color):
-    surface = pg.display.get_surface()
-    pg.draw.rect(surface, color, box.rect, width=1)
 
 def check_collition(A: Box, B: Box):
     # A Edges
@@ -219,7 +191,7 @@ while not game_exit:
 
     # Events
     for event in map_active.event_list:
-        if check_collition(p1.collider, event.collider):
+        if collision.check(p1.collider, event.collider):
 
             if event.id == event1.id and keys[pg.K_z]:
                 transition = True
@@ -274,9 +246,9 @@ while not game_exit:
                 f_box_y.y += f_speed.y
 
                 # Flags
-                collision_x  = check_collition(f_box_x, wall.collider)
-                collision_y  = check_collition(f_box_y, wall.collider)
-                collision_xy = check_collition(f_box  , wall.collider)
+                collision_x  = collision.check(f_box_x, wall.collider)
+                collision_y  = collision.check(f_box_y, wall.collider)
+                collision_xy = collision.check(f_box  , wall.collider)
 
 
                 if collision_x and not collision_y:
