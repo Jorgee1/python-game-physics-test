@@ -175,10 +175,10 @@ def main():
 
         keys = pg.key.get_pressed()
         controls.update()
-        print(controls.up.state)
+        print(controls.accept.state)
 
         # Input
-        if controls.up.state:
+        if controls.accept.state:
             if not jump_lock:
                 p1.speed.y += -8
 
