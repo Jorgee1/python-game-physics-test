@@ -2,216 +2,223 @@ import math
 import time as t
 import random as r
 import pygame as pg
+import json
+from pygame.time import Clock
+
+from lib import color as Color
+from lib.box import Box, draw_box
+from lib.controller import Controller
+from lib import collision
+from pathlib import Path
 
 class Bool2:
     def __init__(self, x=False, y=False):
         self.x = x
         self.y = y
 
-class Color:
-    black = ( 25, 25, 25)
-    white = (200,200,200)
-    red   = (200, 25, 25)
-    green = ( 25,200, 25)
-    blue  = ( 25, 25,200)
-
-class Box:
-    def __init__(self, x, y, w, h):
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
-    
-    def copy(self):
-        return Box(self.x, self.y, self.w, self.h)
-
-    @property
-    def rect(self):
-        return pg.Rect(self.x, self.y, self.w, self.h)
-    
-    @property
-    def size(self):
-        return (self.w, self.h)
-
 class Entity:
-    def __init__(self, collider: Box, color: Color):
-        self.collider = collider
+    def __init__(self, x=0, y=0, w=0, h=0, color=Color.black, airborn=False):
+        self.collider = Box(x, y, w, h)
         self.collision = Bool2()
         self.speed = pg.Vector2()
         self.color = color
+        self.airborn = airborn
+        self.jump_counter = 0
 
     def update(self):
         self.collider.x += self.speed.x
         self.collider.y += self.speed.y
 
-def draw_box(box: Box, color: Color):
-    surface = pg.display.get_surface()
-    pg.draw.rect(surface, color, box.rect, width=1)
+        self.jump_counter -= 1
+        if self.jump_counter <= 0:
+            self.jump_counter = 0
 
-def check_collition(A: Box, B: Box):
-    # A Edges
-    A_IZQ = A.x
-    A_DER = A.x + A.w
-    A_ARR = A.y
-    A_ABJ = A.y + A.h
+class Warp:
+    def __init__(self, x=0, y=0, w=0, h=0, color=Color.black, destination=''):
+        self.collider = Box(x, y, w, h)
+        self.color = color
+        self.destination = destination
 
-    # B Edges
-    B_IZQ = B.x
-    B_DER = B.x + B.w
-    B_ARR = B.y
-    B_ABJ = B.y + B.h
 
-    # Restrictions
-    return (
-        (A_ABJ >= B_ARR) and (A_ARR <= B_ABJ) and
-        (A_DER >= B_IZQ) and (A_IZQ <= B_DER)
-    )
-
-fps = 60
-step = 10
-gravity = 5
-speed_limit = 20
-speed_lock_left = False
-speed_lock_right = False
-game_exit = False
-jump_lock = False
-screen = Box(0,40,640,480)
-
-p1 = Entity(Box(100,100,50,50), Color.red)
-floor = Entity(Box(0,0,2*screen.w,40), Color.green)
-floor.collider.y = screen.h - floor.collider.h
-
-floor1 = Entity(Box(0,0,10,screen.h), Color.green)
-
-floor3 = Entity(Box(400,0,200,60), Color.green)
-floor3.collider.y = floor.collider.y - floor3.collider.h
-
-floor4 = Entity(Box(0,0,200,20), Color.green)
-floor4.collider.x = floor.collider.x + floor.collider.w + 200
-floor4.collider.y = floor.collider.y - 50
-
-dynamic_list = [p1]
-static_list = [floor, floor1, floor3, floor4]
-render_list = [p1, floor, floor1, floor3, floor4]
-
-pg.init()
-pg.display.set_mode(screen.size)
-
-while not game_exit:
-    ref_time = t.time()
-
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            game_exit = True
-            break
-
-    keys = pg.key.get_pressed()
+def load_level(level_path):
+    # TODO: Exceptions?
+    # Maybe parse game objects here instead that on lists later?
+    with open(level_path) as f:
+        data = json.load(f)
     
-    # Input
+    return data['name'], data
 
-    if keys[pg.K_UP]:
-        if p1.collision.y and not jump_lock:
-            p1.speed.y += -40
-            jump_lock = True
-    else:
-        jump_lock = False
 
-    if keys[pg.K_LEFT]:
-        if not speed_lock_left:
+def main():
+    root = Path(__file__).parent
+
+    target_fps = 60
+    steps = 10
+    gravity = 5
+    speed_limit = 20
+    speed_lock_left = False
+    speed_lock_right = False
+    game_exit = False
+    jump_lock = False
+    next_level = None
+
+
+    screen = Box(0, 0, 640, 480)
+    levels = {k: v for k, v in map(load_level, (root / 'levels').iterdir())}
+    
+    data   = levels['level1']
+    p1     = Entity(**data['player'])
+    floors = [Entity(**i) for i in data['walls']]
+    warps  = [Warp(**i) for i in data['warp']]
+
+    dynamic_list = [p1]
+    static_list = floors
+    render_list = dynamic_list + floors + warps
+
+    pg.init()
+    pg.display.set_mode(screen.size)
+    clock = Clock()
+    
+    controls = Controller()
+
+    while not game_exit:
+
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                game_exit = True
+                break
+
+        keys = pg.key.get_pressed()
+        controls.update()
+
+        # Input TODO: implement movement schema
+        if controls.up.press:
+            if not p1.airborn:
+                p1.airborn = True
+                p1.jump_counter = 8
+
+
+        if controls.left.state:
+            if not speed_lock_left:
+                p1.speed.x = 0
+            p1.speed.x -= 1
+            if p1.speed.x < -speed_limit:
+                p1.speed.x = -speed_limit
+            speed_lock_left = True
+        elif controls.right.state:
+            if not speed_lock_right:
+                p1.speed.x = 0
+            p1.speed.x += 1
+            if p1.speed.x > speed_limit:
+                p1.speed.x = speed_limit
+            speed_lock_right = True
+        else:
             p1.speed.x = 0
-        p1.speed.x -= 1
-        if p1.speed.x < -speed_limit:
-            p1.speed.x = -speed_limit
-        speed_lock_left = True
-    elif keys[pg.K_RIGHT]:
-        if not speed_lock_right:
-            p1.speed.x = 0
-        p1.speed.x += 1
-        if p1.speed.x > speed_limit:
-            p1.speed.x = speed_limit
-        speed_lock_right = True
-    else:
-        p1.speed.x = 0
 
-    if not keys[pg.K_LEFT]:
-        speed_lock_left = False
+        if not controls.left.state:
+            speed_lock_left = False
 
-    if not keys[pg.K_RIGHT]:
-        speed_lock_right = False
+        if not controls.right.state:
+            speed_lock_right = False
 
-    # Apply Force
-    for box in dynamic_list:
-        box.speed.y += gravity 
+        # Apply Force
+        for box in dynamic_list:
+            box.speed.y += gravity 
 
-    # Collision
+            if box.airborn:
+                if box.jump_counter:
+                    box.speed.y += -8
 
-    if p1.collider.y > 10000: # Return to stage
-        p1.collider.x = screen.w/2 - p1.collider.w/2
-        p1.collider.y = 0
-        p1.speed.y = 0
+        # Collision
 
-    for box in dynamic_list:
-        box.collision.x = False
-        box.collision.y = False
-        for wall in static_list:
-            for i in range(1, step+1):
-                f_box = box.collider.copy()
-                f_box.x += i*box.speed.x/step
-                f_box.y += i*box.speed.y/step
+        if p1.collider.y > 10000: # Return to stage
+            p1.collider.x = screen.w/2 - p1.collider.w/2
+            p1.collider.y = 0
+            p1.speed.y = 0
 
-                f_box_x = box.collider.copy()
-                f_box_x.x += i*box.speed.x/step
-                f_box_x.y += (i-1)*box.speed.y/step
+        for box in dynamic_list:
+            box.collision.x = False
+            box.collision.y = False
+            for wall in static_list:
 
-                f_box_y = box.collider.copy()
-                f_box_y.x += (i-1)*box.speed.x/step
-                f_box_y.y += i*box.speed.y/step
+                future_player = p1.collider.copy()
+                future_player.x += box.speed.x
+                future_player.y += box.speed.y
 
-                colition_x = check_collition(f_box_x, wall.collider)
-                colition_y = check_collition(f_box_y, wall.collider)
-                colition_xy = check_collition(f_box, wall.collider)
+                if collision.check(future_player, wall.collider):
+                    for i in range(steps):
+                        prev_player = p1.collider.copy()
+                        prev_player.x += i * box.speed.x / steps
+                        prev_player.y += i * box.speed.y / steps
 
-                if colition_x and not colition_y:
-                    box.collision.x = True
-                    box.speed.x = (i-1)*box.speed.x/step
-                    break
+                        next_player = p1.collider.copy()
+                        next_player.x += (i + 1) * box.speed.x / steps
+                        next_player.y += (i + 1) * box.speed.y / steps
 
-                if colition_y and not colition_x:
-                    box.collision.y = True
-                    box.speed.y = (i-1)*box.speed.y/step
-                    break
+                        current_x = collision.check_x(prev_player, wall.collider)
+                        current_y = collision.check_y(prev_player, wall.collider)
 
-                if colition_xy:
-                    box.collision.x = True
-                    box.collision.y = True
-                    box.speed.x = (i-1)*box.speed.x/step
-                    box.speed.y = (i-1)*box.speed.y/step
-                    break
+                        future_x = collision.check_x(next_player, wall.collider)
+                        future_y = collision.check_y(next_player, wall.collider)
 
-    # Update
-    for box in dynamic_list:
-        box.update()
+                        if future_x and not current_x:
+                            box.collision.x = True
+                            box.speed.x = i * box.speed.x / steps
+                            break
 
-    screen.x = p1.collider.x + p1.collider.w/2 - screen.w/2
-    #screen.y = p1.collider.y + p1.collider.h/2 - screen.h/2
+                        if future_y and not current_y:
+                            box.collision.y = True
+                            box.speed.y = i * box.speed.y / steps
 
-    # Render
-    surface = pg.display.get_surface()
-    surface.fill(Color.black)
+                            b_center = box.collider.center
+                            w_center = wall.collider.center
 
-    for box in render_list:
-        temp_box = box.collider.copy()
-        temp_box.x -= screen.x
-        temp_box.y -= screen.y
-        draw_box(temp_box, box.color)
+                            if (b_center.y < w_center.y):
+                                print('land feet')
+                                p1.airborn = False
+                            else:
+                                print('bump head')
+                                p1.airborn = True
 
-    pg.display.flip()
+                            p1.jump_counter = 0
+                            break
 
-    timestamp = t.time() - ref_time
-    if timestamp < 1/(fps+0.5):
-        timestamp1 = t.time() - ref_time
-        t.sleep(1/(fps+0.5) - timestamp1)
+            if not box.collision.y:
+                box.airborn = True
 
-    print(round(1/(t.time() - ref_time)))
+        for box in warps:
+            if collision.check(p1.collider, box.collider):
+                next_level = box.destination
 
-pg.quit()
+        # Update
+        for box in dynamic_list:
+            box.update()
+
+        screen.x = p1.collider.x + p1.collider.w/2 - screen.w/2
+        #screen.y = p1.collider.y + p1.collider.h/2 - screen.h/2
+
+        # Render
+        surface = pg.display.get_surface()
+        surface.fill(Color.black)
+
+        for box in render_list:
+            temp_box = box.collider.copy()
+            temp_box.x -= screen.x
+            temp_box.y -= screen.y
+            draw_box(temp_box, box.color)
+
+        pg.display.flip()
+
+        if next_level:
+            data   = levels[next_level]
+            p1     = Entity(**data['player'], airborn=p1.airborn)
+            floors = [Entity(**i) for i in data['walls']]
+            warps  = [Warp(**i) for i in data['warp']]
+
+            dynamic_list = [p1]
+            static_list = floors
+            render_list = dynamic_list + floors + warps
+            next_level = None
+
+        clock.tick(target_fps)
+main()

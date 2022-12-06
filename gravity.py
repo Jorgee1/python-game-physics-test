@@ -1,14 +1,6 @@
-import math
-import time as t
-import random as r
-import pygame as pg
-
-class Color:
-    black = (25, 25, 25)
-    white = (200, 200, 200)
-    red = (200, 25, 25)
-    green = (25, 200, 25)
-    blue = (25, 25, 200)
+import math, pygame as pg
+from time import time, sleep
+from utils.general import Colors, check_box_collition
 
 class Box:
     def __init__(self, x, y, w, h):
@@ -29,7 +21,7 @@ class Box:
         return pg.Rect(self.x, self.y, self.w, self.h)
 
 class Entity:
-    def __init__(self, collider: Box, color: Color):
+    def __init__(self, collider: Box, color: tuple):
         self.collider = collider
         self.speed = pg.Vector2()
         self.color = color
@@ -38,83 +30,62 @@ class Entity:
         self.collider.x += self.speed.x
         self.collider.y += self.speed.y
 
-def draw_box(box: Box, color: Color):
+def draw_box(box: Box, color: tuple):
     surface = pg.display.get_surface()
     pg.draw.rect(surface, color, box.rect, width=1)
 
-def check_collition(A: Box, B: Box):
-    # A Edges
-    A_IZQ = A.x
-    A_DER = A.x + A.w
-    A_ARR = A.y
-    A_ABJ = A.y + A.h
 
-    # B Edges
-    B_IZQ = B.x
-    B_DER = B.x + B.w
-    B_ARR = B.y
-    B_ABJ = B.y + B.h
+def set_fps(fps, ref_time):
+    timestamp = time() - ref_time
+    if 1/fps > timestamp: sleep(1/fps - timestamp)
+    return time()
 
-    # Restrictions
-
-    return (
-        (A_ABJ >= B_ARR) and (A_ARR <= B_ABJ) and
-        (A_DER >= B_IZQ) and (A_IZQ <= B_DER)
-    )
-
-
-
-width  = 640
+width = 640
 height = 480
 step = 10
-fps = 60
+frame_limit = 60
 n = 10
-gravity = 13
+gravity = 1
 game_exit = False
 
 
-boxes = []
+boxes = [Entity(Box(i*width/n, 0, 20, 10), Colors.red) for i in range(n)]
 
-for i in range(n):
-    entity = Entity(Box(i*width/n,0,20,10), Color.red)
-    boxes.append(entity)
-
-boxes_static = [Entity(Box(0,height - 100,width,5), Color.green)]
+boxes_static = [Entity(Box(0, height-100, width, 5), Colors.green)]
 
 pg.init()
 pg.display.set_mode((width, height))
 
-while not game_exit:
-    ref_time = t.time()
+ref_time = time()
 
+while not game_exit:
+    
     for event in pg.event.get():
         if event.type == pg.QUIT:
             game_exit = True
 
     # Apply Force
-    for box in boxes:
-        box.speed.y += gravity
+    for box in boxes: box.speed.y += gravity
 
     # Collition Detection
-    for box_static in boxes_static:
+    for current_box in boxes_static:
         for box in boxes:
             for i in range(step):
 
-                temp_box = box.collider.copy()
-                temp_box.x += i*box.speed.x/step
-                temp_box.y += i*box.speed.y/step
+                future_box = box.collider.copy()
+                future_box.x += i*box.speed.x/step
+                future_box.y += i*box.speed.y/step
 
-                if check_collition(temp_box, box_static.collider):
+                if check_box_collition(future_box, current_box.collider):
                     box.speed.y = (i-1)*box.speed.y/step
                     break
 
     # Update
-    for box in boxes:
-        box.update()
+    for box in boxes: box.update()
 
     # Render
     surface = pg.display.get_surface()
-    surface.fill(Color.black)
+    surface.fill(Colors.black)
 
     for box in boxes_static:
         draw_box(box.collider, box.color)
@@ -122,13 +93,10 @@ while not game_exit:
     for box in boxes:
         draw_box(box.collider, box.color)
 
-
     pg.display.flip()
 
-    timestamp = t.time() - ref_time
-    if timestamp < 1/fps:
-        t.sleep(1/fps - timestamp)
+    # FPS Control
+    ref_time = set_fps(frame_limit, ref_time)
 
-    print(round(1/(t.time() - ref_time)))
 
 pg.quit()

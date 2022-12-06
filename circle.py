@@ -1,77 +1,37 @@
-import math
-import time
-import random as r
-import pygame as pg
+import math, time, pygame as pg
+from random import random
 
-class Color:
-    black = (25, 25, 25)
-    white = (200, 200, 200)
-    red = (200,100,100)
-    blue = (100,200,100)
-
-
-class Circle:
-    def __init__(self, *, x, y, r, color):
-        self.x = x
-        self.y = y
-        self.r = r
-        self.color = color
-
-        self.speed = pg.Vector2(0,0)
-
-    @property
-    def center(self):
-        return pg.Vector2(self.x, self.y)
-
-    @property
-    def rect(self):
-        return pg.Rect(
-            self.x - self.r,
-            self.y - self.r,
-            self.r * 2,
-            self.r * 2
-        )
-
-def draw_bound_rect(circle: Circle):
-    surface = pg.display.get_surface()
-    pg.draw.rect(surface, circle.color, circle.rect, width=1)
-
-def draw_circle(circle: Circle):
-    surface = pg.display.get_surface()
-    pg.draw.circle(surface, circle.color, circle.center, circle.r, width=1)
-
-def check_circle_collition(c1, c2):
-    return math.dist(c1.center, c2.center) < c1.r + c2.r
+from utils.general import Colors
+from utils.circle import Circle, draw_circle, check_circle_collition
 
 
 width = 640
 height = 480
 n_circle = 50
-step = 10
+step = 50
 game_exit = False
 
 
+p1 = Circle(x=100, y=100, r=100, color=Colors.red)
 
-p1 = Circle(x=100, y=100, r=100, color=Color.red)
-
-render_list = [p1]
+circles = [p1]
 
 for i in range(n_circle):
-    x = r.random() * (width - 100) + 50
-    y = r.random() * (height - 100) + 50
+    x = random() * (width - 100) + 50
+    y = random() * (height - 100) + 50
 
-    if round(r.random()):
+    if round(random()):
         x = -1*x
 
-    if round(r.random()):
+    if round(random()):
         y = -1*y
 
-    speed_x = r.random()
+    speed_x = random()
     speed_y = math.sqrt(1-speed_x**2)
-    circle = Circle(x=x, y=y, r=50, color=Color.blue)
+    circle = Circle(x=x, y=y, r=50, color=Colors.green)
     circle.speed.x = speed_x * 10
     circle.speed.y = speed_y * 10
-    render_list.append(circle)
+    circles.append(circle)
 
 pg.init()
 pg.display.set_mode((width, height))
@@ -102,15 +62,15 @@ while not game_exit:
 
 
     # Collition detection
-    for c in render_list[1:]:
+    for c in circles[1:]:
         temp_speed_x = c.speed.x
         temp_speed_y = c.speed.y
         for i in range(1, step+1):
-            temp_p = Circle(x=p1.x, y=p1.y, r=p1.r, color=Color.white)
+            temp_p = Circle(x=p1.x, y=p1.y, r=p1.r, color=Colors.white)
             temp_p.x = p1.x + i*p1.speed.x/step
             temp_p.y = p1.y + i*p1.speed.y/step
 
-            temp_c = Circle(x=c.x, y=c.y, r=c.r, color=Color.white)
+            temp_c = Circle(x=c.x, y=c.y, r=c.r, color=Colors.white)
             temp_c.x = c.x + i*c.speed.x/step
             temp_c.y = c.y + i*c.speed.y/step
 
@@ -144,17 +104,16 @@ while not game_exit:
 
 
     # Update
-    for c in render_list:
+    for c in circles:
         c.x += c.speed.x
         c.y += c.speed.y
 
     # Renderer
     surface = pg.display.get_surface()
-    surface.fill(Color.black)
+    surface.fill(Colors.black)
 
-    for c in render_list:
+    for c in circles:
         draw_circle(c)
-        #draw_bound_rect(c)
 
     pg.display.flip()
 
@@ -166,3 +125,8 @@ while not game_exit:
     print(round(1/(time.time() - ref_time)))
 
 pg.quit()
+
+
+
+
+
